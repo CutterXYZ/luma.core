@@ -189,6 +189,14 @@ class make_interface(object):
         from luma.core.interface.serial import pcf8574
         return pcf8574(port=self.opts.i2c_port, address=self.opts.i2c_address)
 
+    def aip31068(self):
+        from luma.core.interface.serial import aip31068
+        return aip31068(port=self.opts.i2c_port, address=self.opts.i2c_address)
+
+    def pca9633(self):
+        from luma.core.interface.serial import pca9633
+        return pca9633(port=self.opts.i2c_backlight_port, address=self.opts.i2c_backlight_address)
+
     def bitbang_6800(self):
         from luma.core.interface.parallel import bitbang_6800
         GPIO = self.__init_alternative_GPIO()
@@ -243,7 +251,8 @@ def create_device(args, display_types=None):
         import luma.lcd.device
         Device = getattr(luma.lcd.device, args.display)
         interface = getattr(make_interface(args), args.interface)()
-        backlight_params = dict(gpio=interface._gpio, gpio_LIGHT=args.gpio_backlight, active_low=args.backlight_active == "low")
+        backlight = getattr(make_interface(args), args.backlight)()
+        backlight_params = dict(gpio=interface._gpio, gpio_LIGHT=args.gpio_backlight, active_low=args.backlight_active == "low", backlight=backlight)
         framebuffer = getattr(luma.core.framebuffer, args.framebuffer)(num_segments=args.num_segments, debug=args.debug)
         params = dict(vars(args), framebuffer=framebuffer, **backlight_params)
         device = Device(serial_interface=interface, **params)
@@ -300,6 +309,8 @@ def create_parser(description, parser=None, autocomplete=True):
     block_orientation_choices_repr = ', '.join([str(x) for x in block_orientation_choices])
     color_choices = ['1', 'RGB', 'RGBA']
     color_choices_repr = ', '.join(color_choices)
+    backlight_types = ['pca9633']
+    backlight_types_repr = ', '.join(backlight_types)
 
     general_group = parser.add_argument_group('General')
     general_group.add_argument('--config', '-f', type=str, help='Load configuration settings from a file')
@@ -348,6 +359,9 @@ def create_parser(description, parser=None, autocomplete=True):
     misc_group.add_argument('--h-offset', type=int, default=0, help='Horizontal offset (in pixels) of screen to display memory (ST7735 displays only).')
     misc_group.add_argument('--v-offset', type=int, default=0, help='Vertical offset (in pixels) of screen to display memory (ST7735 displays only).')
     misc_group.add_argument('--backlight-active', type=str, default='low', help='Set to \"low\" if LCD backlight is active low, else \"high\" otherwise (PCD8544, ST7735 displays only). Allowed values are: low, high', choices=["low", "high"], metavar='VALUE')
+    misc_group.add_argument('--backlight', type=str, default=backlight_types[0], help=f'Backlight interface type (HD44780 display only). Allowed values are: {backlight_types_repr}', choices=backlight_types, metavar='BACKLIGHT')
+    misc_group.add_argument('--i2c-backlight-port', type=int, default=1, help='I2C bus number of the backlight interface')
+    misc_group.add_argument('--i2c-backlight-address', type=str, default='0x60', help='I2C address of the backlight interface')
     misc_group.add_argument('--debug', dest='debug', action='store_true', help='Set to enable debugging.')
 
     if len(display_types['emulator']) > 0:
