@@ -826,7 +826,7 @@ class pca9633(i2c):
         else:
             self._set_pwm({'brightness': 0})
 
-    def set_brightness(self, brightness, duration=0, wait=False):
+    def set_brightness(self, brightness, duration=0, wait=True):
         """
         Sets the backlight's brightness.
 
@@ -841,7 +841,7 @@ class pca9633(i2c):
 
         self._brightness = {'brightness': brightness}
 
-    def set_color(self, red, green, blue, amber=None, duration=0, wait=False):
+    def set_color(self, red, green, blue, amber=None, duration=0, wait=True):
         """
         Sets the backlight's color.
 
@@ -895,7 +895,7 @@ class pca9633(i2c):
             self._distances = self._get_distances(self._start_state, self._end_state)
             self._regulator = self.framerate_regulator((self._step_count / duration) if duration > 0 else 0)
 
-        def __call__(self, wait=False, *args, **kwds):
+        def __call__(self, wait, *args, **kwds):
             process = self.Process(target=self._run_steps)
             process.start()
             if wait:
