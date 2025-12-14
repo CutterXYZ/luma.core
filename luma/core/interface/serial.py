@@ -792,7 +792,7 @@ class pca9633(i2c):
 
     REG_LEDOUT = 0x08
 
-    def __init__(self, bus=None, port=1, address=0x60):        
+    def __init__(self, bus=None, port=1, address=0x60):
         super().__init__(bus, port, address)
 
         self._bitmode = 8
@@ -837,7 +837,7 @@ class pca9633(i2c):
         assert 0 <= brightness <= 255
 
         if self._backlight_enabled:
-            self.transition(self._brightness, { 'brightness': brightness }, duration, self._set_pwm)(wait)
+            self.transition(self._brightness, {'brightness': brightness}, duration, self._set_pwm)(wait)
 
         self._brightness = {'brightness': brightness}
 
@@ -874,7 +874,7 @@ class pca9633(i2c):
                    'blue': self.REG_BLUE_PWM,
                    'amber': self.REG_AMBER_PWM,
                    'brightness': self.REG_GRP_PWM}
-        
+
         assert pwm_values.keys() <= reg_map.keys()
 
         for c in pwm_values:
@@ -886,6 +886,7 @@ class pca9633(i2c):
     class transition:
         from luma.core.sprite_system import framerate_regulator
         from multiprocessing import Process
+
         def __init__(self, start_state, end_state, duration, step_callback):
             self._step_callback = step_callback
             self._start_state = start_state if duration > 0 else end_state
@@ -896,10 +897,11 @@ class pca9633(i2c):
             self._regulator = self.framerate_regulator((self._step_count / duration) if duration > 0 else 0)
 
         def __call__(self, wait, *args, **kwds):
-            process = self.Process(target=self._run_steps)
-            process.start()
             if wait:
-                process.join()
+                self._run_steps()
+            else:
+                process = self.Process(target=self._run_steps)
+                process.start()
 
         def _get_step_count(self, start_state, end_state):
             step_count = 1  # Create at least one step for instantaneous changes
@@ -919,12 +921,12 @@ class pca9633(i2c):
             assert step_number <= self._step_count
             step = {}
             for k in self._end_state:
-                step[k] = self._start_state[k] + int( step_number / self._step_count * self._distances[k] )
+                step[k] = self._start_state[k] + int(step_number / self._step_count * self._distances[k])
 
             return step
 
         def _run_steps(self):
             for i in range(self._step_count):
-                step = self._get_step(i+1)
+                step = self._get_step(i + 1)
                 with self._regulator:
                     self._step_callback(step)
